@@ -29,6 +29,7 @@ type EtcdConfig struct {
 	lastSentRev int64
 	v           *viper.Viper
 	path        string //缓存文件的路径
+	keyPrefix   string //key 前缀
 }
 
 // NewClient
@@ -56,14 +57,13 @@ func NewClient(endpoints []string, password string, group, configType string, pr
 		return nil, err
 	}
 	e.client = c
-	var keyPrefix string
 	//前缀，没有设置给个默认
 	if len(prefix) == 0 {
-		keyPrefix = "/hub-config/etcd"
+		e.keyPrefix = "/hub-config/etcd"
 	} else {
-		keyPrefix = prefix[0]
+		e.keyPrefix = prefix[0]
 	}
-	e.keyName = keyPrefix + "/" + group + "/" + e.configType
+	e.keyName = e.keyPrefix + "/" + group + "/" + e.configType
 
 	return e, nil
 }
@@ -96,7 +96,7 @@ func (e *EtcdConfig) SetWatcher() error {
 		}
 	}
 	//先写一次数据到缓存文件
-	fmt.Println(filepath.Join(e.path, fmt.Sprintf("%s.%s", FN, e.configType)))
+	//fmt.Println(filepath.Join(e.path, fmt.Sprintf("%s.%s", FN, e.configType)))
 	err = e.WriteCache(content)
 	if err != nil {
 		return err
@@ -177,9 +177,13 @@ func (e *EtcdConfig) startWatch() error {
 // @Date 10:45 PM 2022/12/4
 // @Param
 // @return
-func (e *EtcdConfig) EtcdPut(val string) error {
+func (e *EtcdConfig) EtcdPut(val string, group string) error {
 	e.lock.Lock()
 	defer e.lock.Unlock()
+	if group != "" {
+		//如果 传了key 则 更新 keyName,这只适用于put值
+		e.keyName = e.keyPrefix + "/" + group + "/" + e.configType
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	_, err := e.client.Put(ctx, e.keyName, val)
 	//if err == nil {

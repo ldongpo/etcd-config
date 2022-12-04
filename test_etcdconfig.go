@@ -11,7 +11,7 @@ func TestClient(t *testing.T) {
 	_ = c.SetWatcher()
 	fmt.Println(c.GetString("test"))
 
-	_ = c.EtcdPut(`{"test":123}`)
+	_ = c.EtcdPut(`{"test":123}`, "")
 
 	fmt.Println(c.GetString("test"))
 }

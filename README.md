@@ -10,7 +10,7 @@
 ## 客户端监听服务端数据变化
 
 ```
-c, _ := NewClient([]string{"http://27.0.0.1:2379"}, "", "group", "json")
+c, _ := etcdconfig.NewClient([]string{"http://27.0.0.1:2379"}, "", "group", "json")
 
 // 客户端需要监听的时候需要这行代码
 _ = c.SetWatcher()
@@ -25,20 +25,21 @@ NewClient 接受etcd的连接地址，配置的group，和配置的类型，目�
 需要我们在往etcd put 数据的时候按规定的格式写入
 
 ## 客户端写入数据实例：
+EtcdPut 第二个参数是 group ，不传默认group
 
 ```
 // put 一个json 数据
-_ = c.EtcdPut(`{"test":123}`)
+_ = c.EtcdPut(`{"test":123}`,"")
 ```
 
 ```
-c, _ := NewClient([]string{"http://27.0.0.1:2379"}, "", "group", "yaml")
+c, _ := etcdconfig.NewClient([]string{"http://27.0.0.1:2379"}, "", "group", "yaml")
 // put 一个yaml 数据
 yaml := `
 test:
     123abc
     `
-_ = c.EtcdPut(yaml)
+_ = c.EtcdPut(yaml,"")
 
 fmt.Println(c.GetString("test"))
 //输出：123abc
