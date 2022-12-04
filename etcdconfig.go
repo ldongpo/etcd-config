@@ -23,6 +23,7 @@ type EtcdConfig struct {
 	client      *client.Client
 	lock        sync.RWMutex
 	keyName     string
+	group       string   // group
 	configType  string   //配置的类型，目前支持：json、yaml
 	endpoints   []string //etcd 地址配置
 	password    string   // 连接密码
@@ -42,6 +43,7 @@ func NewClient(endpoints []string, password string, group, configType string, pr
 	e := &EtcdConfig{}
 	e.endpoints = endpoints
 	e.configType = configType
+	e.group = group
 	if password != "" {
 		e.password = password
 	}
@@ -63,7 +65,7 @@ func NewClient(endpoints []string, password string, group, configType string, pr
 	} else {
 		e.keyPrefix = prefix[0]
 	}
-	e.keyName = e.keyPrefix + "/" + group + "/" + e.configType
+	e.keyName = e.keyPrefix + "/" + e.group + "/" + e.configType
 
 	return e, nil
 }
@@ -177,13 +179,17 @@ func (e *EtcdConfig) startWatch() error {
 // @Date 10:45 PM 2022/12/4
 // @Param
 // @return
-func (e *EtcdConfig) EtcdPut(val string, group string) error {
+func (e *EtcdConfig) EtcdPut(val string, group string, configType string) error {
 	e.lock.Lock()
 	defer e.lock.Unlock()
-	if group != "" {
-		//如果 传了key 则 更新 keyName,这只适用于put值
-		e.keyName = e.keyPrefix + "/" + group + "/" + e.configType
+	if configType == "" {
+		configType = e.configType
 	}
+	if group == "" {
+		group = e.group
+	}
+	//keyName重新赋值
+	e.keyName = e.keyPrefix + "/" + group + "/" + configType
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	_, err := e.client.Put(ctx, e.keyName, val)
 	//if err == nil {
