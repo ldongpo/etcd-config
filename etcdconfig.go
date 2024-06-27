@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -215,6 +216,35 @@ func (e *EtcdConfig) EtcdGet() ([]byte, error) {
 		return []byte(""), nil
 	}
 	return getResp.Kvs[0].Value, nil
+}
+
+// GetDiscoverServices
+// @Author 东坡
+// @Description 获取服务注册的服务列表，目前只简单获取了服务列表
+// @Date 16:01 2024/6/27
+// @Param
+// @return
+func (e *EtcdConfig) GetDiscoverServices() (map[string][]string, error) {
+	servicesMap := make(map[string][]string)
+	resp, err := e.client.Get(context.Background(), e.keyPrefix, client.WithPrefix())
+	if err != nil {
+		return nil, err
+	}
+	for _, kv := range resp.Kvs {
+		// 这里目前只提供简单的服务发现功能，可以根据需要扩展
+		//sd.lock.Lock()
+		//defer sd.lock.Unlock()
+		// 提取服务名称和 Pod ID
+		key := string(kv.Key)
+		value := string(kv.Value)
+		parts := strings.Split(key, "/")
+		if len(parts) >= 2 {
+			// 获取服务名称（假设它是路径的最后一个部分）
+			serviceName := parts[len(parts)-2]
+			servicesMap[serviceName] = append(servicesMap[serviceName], value)
+		}
+	}
+	return servicesMap, nil
 }
 
 // Get
